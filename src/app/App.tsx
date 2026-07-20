@@ -161,11 +161,11 @@ export default function App() {
         ══════════════════════════════════════════════════════════ */}
         <section id="quote-form" className="relative overflow-hidden lg:min-h-[calc(100vh-67px)]" style={{ paddingTop: 67 }}>
 
-          {/* Full-bleed photo — desktop split / mobile form backdrop */}
+          {/* Full-bleed photo — desktop only */}
           <img
             src="https://images.unsplash.com/photo-1690695912818-46c006846226?w=2400&h=1600&fit=crop&crop=center&auto=format&q=95"
             alt="Water gushing from a burst pipe — DeMelo Plumbing emergency response"
-            className="absolute inset-0 w-full h-full object-cover"
+            className="absolute inset-0 w-full h-full object-cover hidden lg:block"
             style={{ filter: "brightness(0.84) contrast(1.12) saturate(0.88)" }}
           />
 
@@ -224,16 +224,18 @@ export default function App() {
             </div>
           </div>
 
-          {/* Form — stacked below hero on mobile, floating over photo on desktop */}
-          <div className="relative z-10 flex items-center justify-center px-5 py-10 lg:absolute lg:inset-y-0 lg:right-0 lg:w-[42%] lg:px-6 lg:py-0 lg:pr-[max(2rem,calc((100vw-1152px)/2+2rem))] lg:pl-6">
-            <div className="w-full max-w-sm rounded-2xl p-6"
-              style={{ background: "rgba(255,255,255,0.97)", border: "2px solid #F5A623", boxShadow: "0 32px 64px rgba(8,12,23,0.45)" }}>
-              <div className="flex items-center justify-between mb-1">
-                <p className="font-display font-black text-xl" style={{ color: "#080C17" }}>Get a Free Estimate</p>
-                <span className="text-[10px] font-black uppercase tracking-widest px-2 py-1 rounded-md"
-                  style={{ background: "rgba(245,166,35,0.12)", color: "#C47E0A" }}>No Obligation</span>
+          {/* Form — full-bleed on mobile, floating over photo on desktop */}
+          <div className="relative z-10 flex items-center justify-center px-0 py-0 lg:absolute lg:inset-y-0 lg:right-0 lg:w-[42%] lg:px-6 lg:py-0 lg:pr-[max(2rem,calc((100vw-1152px)/2+2rem))] lg:pl-6">
+            <div
+              className="w-full max-w-full lg:max-w-sm rounded-none lg:rounded-2xl p-6 lg:border-2 lg:shadow-[0_32px_64px_rgba(8,12,23,0.45)]"
+              style={{ background: "rgba(255,255,255,0.97)", borderColor: "#F5A623" }}
+            >
+              <div className="flex items-start justify-between gap-3 mb-1">
+                <p className="font-display font-black text-[1.35rem] leading-tight" style={{ color: "#080C17" }}>Get a Free Estimate</p>
+                <span className="flex-shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md mt-0.5"
+                  style={{ background: "rgba(245,166,35,0.14)", color: "#C47E0A" }}>No Obligation</span>
               </div>
-              <p className="text-xs mb-5" style={{ color: "rgba(8,12,23,0.45)" }}>A real person calls back within 15 minutes.</p>
+              <p className="text-sm mb-6" style={{ color: "rgba(8,12,23,0.45)" }}>A real person calls back within 15 minutes.</p>
 
               {sent ? (
                 <div className="text-center py-6">
@@ -242,35 +244,43 @@ export default function App() {
                   </div>
                   <p className="font-display font-black text-lg" style={{ color: "#080C17" }}>Request Received!</p>
                   <p className="text-sm mt-1 mb-4" style={{ color: "rgba(8,12,23,0.45)" }}>We'll call you within 15 minutes.</p>
-                  <a href="tel:+12263872017" className="inline-flex items-center gap-2 font-black px-5 py-3 rounded-xl"
+                  <a href="tel:+12263872017" className="inline-flex items-center gap-2 font-black px-5 py-3 rounded-2xl"
                     style={{ background: "#F5A623", color: "#080C17" }}>
                     <Phone className="w-4 h-4" /> Call Now
                   </a>
                 </div>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); setSent(true); }} className="space-y-3">
+                <form onSubmit={e => { e.preventDefault(); setSent(true); }} className="space-y-4">
                   {[
                     { id: "hfn", label: "Your Name",    type: "text", ph: "John Smith",      key: "name",  auto: "name" },
                     { id: "hfp", label: "Phone Number", type: "tel",  ph: "(226) 555-0100", key: "phone", auto: "tel" },
                   ].map(f => (
                     <div key={f.id}>
-                      <label htmlFor={f.id} className="block text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                        style={{ color: "rgba(8,12,23,0.45)" }}>{f.label} *</label>
+                      <label htmlFor={f.id} className="block text-[10px] font-bold uppercase tracking-widest mb-2"
+                        style={{ color: "rgba(8,12,23,0.42)" }}>{f.label} *</label>
                       <input id={f.id} type={f.type} required placeholder={f.ph}
                         value={form[f.key as keyof typeof form]}
                         onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                         autoComplete={f.auto}
-                        className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                        style={{ background: "#F5F6F8", border: "1.5px solid rgba(8,12,23,0.10)", color: "#080C17" }}
+                        className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 placeholder:text-[rgba(8,12,23,0.35)]"
+                        style={{ background: "#FFFFFF", border: "1.5px solid rgba(8,12,23,0.12)", color: "#080C17" }}
                       />
                     </div>
                   ))}
                   <div>
-                    <label htmlFor="hfs" className="block text-[10px] font-bold uppercase tracking-widest mb-1.5"
-                      style={{ color: "rgba(8,12,23,0.45)" }}>Service Needed</label>
+                    <label htmlFor="hfs" className="block text-[10px] font-bold uppercase tracking-widest mb-2"
+                      style={{ color: "rgba(8,12,23,0.42)" }}>Service Needed</label>
                     <select id="hfs" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
-                      className="w-full rounded-xl px-4 py-3 text-sm focus:outline-none"
-                      style={{ background: "#F5F6F8", border: "1.5px solid rgba(8,12,23,0.10)", color: "#080C17" }}>
+                      className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 appearance-none"
+                      style={{
+                        backgroundColor: "#FFFFFF",
+                        border: "1.5px solid rgba(8,12,23,0.12)",
+                        color: form.service ? "#080C17" : "rgba(8,12,23,0.35)",
+                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
+                        backgroundRepeat: "no-repeat",
+                        backgroundPosition: "right 1rem center",
+                        paddingRight: "2.75rem",
+                      }}>
                       <option value="">Select a service...</option>
                       {["Emergency Plumbing Repair","Drain Cleaning","Water Heater Replacement","Electrical Panel Upgrade","Sump Pump Repair","Kitchen / Bathroom Renovation","Other"].map(o => (
                         <option key={o}>{o}</option>
@@ -278,11 +288,11 @@ export default function App() {
                     </select>
                   </div>
                   <button type="submit"
-                    className="w-full font-black text-base py-4 rounded-xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity"
-                    style={{ background: "#F5A623", color: "#080C17", boxShadow: "0 8px 24px rgba(245,166,35,0.3)" }}>
+                    className="w-full font-black text-sm tracking-wide py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-1"
+                    style={{ background: "#F5A623", color: "#080C17", boxShadow: "0 8px 20px rgba(245,166,35,0.35)" }}>
                     GET FREE ESTIMATE <ArrowRight className="w-4 h-4" />
                   </button>
-                  <p className="text-center text-xs" style={{ color: "rgba(8,12,23,0.3)" }}>No spam. No obligation. Ever.</p>
+                  <p className="text-center text-xs pt-0.5" style={{ color: "rgba(8,12,23,0.32)" }}>No spam. No obligation. Ever.</p>
                 </form>
               )}
             </div>
@@ -781,7 +791,10 @@ export default function App() {
         </section>
 
         {/* ── FOOTER — dark navy ──────────────────────────────────── */}
-        <footer style={{ background: "#080C17", borderTop: "1px solid rgba(255,255,255,0.06)" }}>
+        <footer
+          className="pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-0"
+          style={{ background: "#080C17", borderTop: "1px solid rgba(255,255,255,0.06)" }}
+        >
           <div className="max-w-6xl mx-auto px-5 py-10 flex flex-col items-center gap-4 text-center">
             <Logo size="md" invert={false} />
             <p className="text-sm max-w-md leading-relaxed" style={{ color: "rgba(255,255,255,0.35)" }}>
