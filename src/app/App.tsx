@@ -854,7 +854,7 @@ export default function App() {
 
         {/* ── FOOTER — dark navy ──────────────────────────────────── */}
         <footer
-          className="pb-[calc(8rem+env(safe-area-inset-bottom))] sm:pb-0"
+          className="pb-[calc(5rem+env(safe-area-inset-bottom))] sm:pb-0"
           style={{ background: "#080C17", borderTop: "1px solid rgba(255,255,255,0.06)" }}
         >
           <div className="max-w-6xl mx-auto px-5 py-10 flex flex-col items-center gap-4 text-center">
@@ -868,7 +868,19 @@ export default function App() {
               ))}
             </div>
             <a href="tel:+12263872017" className="font-black text-sm" style={{ color: "#F5A623" }}>(226) 387-2017</a>
-            <p className="text-xs" style={{ color: "rgba(255,255,255,0.15)" }}>© 2026 DEMELO PLUMBING &amp; ELECTRICAL. ALL RIGHTS RESERVED.</p>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.40)" }}>© 2026 DEMELO PLUMBING &amp; ELECTRICAL. ALL RIGHTS RESERVED.</p>
+            <p className="text-xs" style={{ color: "rgba(255,255,255,0.40)" }}>
+              Development and Design by{" "}
+              <a
+                href="https://www.borsosmedia.com/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="underline underline-offset-2 hover:opacity-80 transition-opacity"
+                style={{ color: "inherit" }}
+              >
+                Borsos Media
+              </a>
+            </p>
           </div>
         </footer>
 
