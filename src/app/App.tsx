@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, type FormEvent } from "react";
 import logoImg from "@/imports/image-4.png";
 import mapImg from "@/imports/image-6.png";
 import drainCameraImg from "@/imports/photos/drain-camera.png";
@@ -121,11 +121,68 @@ const FAQS = [
 
 const SCHEMA = { "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "DeMelo Plumbing & Electrical", "telephone": "+12263872017", "url": "https://www.demeloplumbingelectrical.ca", "openingHours": "Mo-Su 00:00-24:00", "aggregateRating": { "@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "20" }, "address": { "@type": "PostalAddress", "streetAddress": "272 German School Rd", "addressLocality": "Brant", "addressRegion": "ON", "postalCode": "N3L 3E1", "addressCountry": "CA" } }, { "@type": "FAQPage", "mainEntity": FAQS.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] };
 
+const LEAD_WEBHOOK_URL =
+  "https://services.leadconnectorhq.com/hooks/TPrxtx0jzGjXWbjVv2pj/webhook-trigger/21b34e5c-9eb8-4841-87d1-bd1c1ffa4071";
+
 export default function App() {
   const [tab, setTab]   = useState<"plumbing" | "electrical">("plumbing");
   const [faq, setFaq]   = useState<number | null>(null);
   const [form, setForm] = useState({ name: "", phone: "", service: "" });
   const [sent, setSent] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState("");
+
+  async function handleLeadSubmit(e: FormEvent) {
+    e.preventDefault();
+    if (submitting) return;
+    setSubmitting(true);
+    setSubmitError("");
+
+    const name = form.name.trim();
+    const phone = form.phone.trim();
+    const service = form.service.trim();
+    const parts = name.split(/\s+/);
+    const firstName = parts[0] || name;
+    const lastName = parts.slice(1).join(" ") || "";
+
+    try {
+      // Prefer same-origin API on Vercel; fall back to webhook for local Vite.
+      const endpoints = ["/api/lead", LEAD_WEBHOOK_URL];
+      let ok = false;
+      let lastError = "";
+
+      for (const endpoint of endpoints) {
+        try {
+          const res = await fetch(endpoint, {
+            method: "POST",
+            headers: { "Content-Type": "application/json", Accept: "application/json" },
+            body: JSON.stringify({
+              name,
+              firstName,
+              lastName,
+              phone,
+              service,
+              source: "DeMelo Landing Page - Free Estimate",
+            }),
+          });
+          if (res.ok) {
+            ok = true;
+            break;
+          }
+          lastError = `HTTP ${res.status}`;
+        } catch (err) {
+          lastError = err instanceof Error ? err.message : "Network error";
+        }
+      }
+
+      if (!ok) throw new Error(lastError || "Submit failed");
+      setSent(true);
+    } catch {
+      setSubmitError("Something went wrong. Please call (226) 387-2017.");
+    } finally {
+      setSubmitting(false);
+    }
+  }
 
   return (
     <>
@@ -250,7 +307,7 @@ export default function App() {
                   </a>
                 </div>
               ) : (
-                <form onSubmit={e => { e.preventDefault(); setSent(true); }} className="space-y-4">
+                <form onSubmit={handleLeadSubmit} className="space-y-4">
                   {[
                     { id: "hfn", label: "Your Name",    type: "text", ph: "John Smith",      key: "name",  auto: "name" },
                     { id: "hfp", label: "Phone Number", type: "tel",  ph: "(226) 555-0100", key: "phone", auto: "tel" },
@@ -262,7 +319,8 @@ export default function App() {
                         value={form[f.key as keyof typeof form]}
                         onChange={e => setForm({ ...form, [f.key]: e.target.value })}
                         autoComplete={f.auto}
-                        className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 placeholder:text-[rgba(8,12,23,0.35)]"
+                        disabled={submitting}
+                        className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 placeholder:text-[rgba(8,12,23,0.35)] disabled:opacity-60"
                         style={{ background: "#FFFFFF", border: "1.5px solid rgba(8,12,23,0.12)", color: "#080C17" }}
                       />
                     </div>
@@ -271,7 +329,8 @@ export default function App() {
                     <label htmlFor="hfs" className="block text-[10px] font-bold uppercase tracking-widest mb-2"
                       style={{ color: "rgba(8,12,23,0.42)" }}>Service Needed</label>
                     <select id="hfs" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
-                      className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 appearance-none"
+                      disabled={submitting}
+                      className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 appearance-none disabled:opacity-60"
                       style={{
                         backgroundColor: "#FFFFFF",
                         border: "1.5px solid rgba(8,12,23,0.12)",
@@ -287,10 +346,13 @@ export default function App() {
                       ))}
                     </select>
                   </div>
-                  <button type="submit"
-                    className="w-full font-black text-sm tracking-wide py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-1"
+                  {submitError && (
+                    <p className="text-center text-xs font-semibold" style={{ color: "#E63946" }}>{submitError}</p>
+                  )}
+                  <button type="submit" disabled={submitting}
+                    className="w-full font-black text-sm tracking-wide py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-1 disabled:opacity-70"
                     style={{ background: "#F5A623", color: "#080C17", boxShadow: "0 8px 20px rgba(245,166,35,0.35)" }}>
-                    GET FREE ESTIMATE <ArrowRight className="w-4 h-4" />
+                    {submitting ? "SENDING…" : <>GET FREE ESTIMATE <ArrowRight className="w-4 h-4" /></>}
                   </button>
                   <p className="text-center text-xs pt-0.5" style={{ color: "rgba(8,12,23,0.32)" }}>No spam. No obligation. Ever.</p>
                 </form>
