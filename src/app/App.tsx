@@ -1,4 +1,4 @@
-import { useState, type FormEvent } from "react";
+import { useState, useEffect } from "react";
 import logoImg from "@/imports/image-4.png";
 import mapImg from "@/imports/image-6.png";
 import drainCameraImg from "@/imports/photos/drain-camera.png";
@@ -11,6 +11,58 @@ import {
   Wrench, Waves, Filter, Flame, Zap, Timer,
   MapPin, TrendingUp, Users, Award,
 } from "lucide-react";
+
+const JOBBER_CLIENTHUB_ID = "9a513534-6a88-41b5-a814-9105ccc277e4-2152647";
+const JOBBER_FORM_URL =
+  "https://clienthub.getjobber.com/client_hubs/9a513534-6a88-41b5-a814-9105ccc277e4/public/work_request/embedded_work_request_form?form_id=2152647";
+const JOBBER_CSS = "https://d3ey4dbjkt2f6s.cloudfront.net/assets/external/work_request_embed.css";
+const JOBBER_SCRIPT = "https://d3ey4dbjkt2f6s.cloudfront.net/assets/static_link/work_request_embed_snippet.js";
+
+function JobberWorkRequestForm() {
+  useEffect(() => {
+    const mount = document.getElementById(JOBBER_CLIENTHUB_ID);
+    if (!mount || mount.dataset.jobberLoaded === "true") return;
+    mount.dataset.jobberLoaded = "true";
+
+    if (!document.querySelector(`link[href="${JOBBER_CSS}"]`)) {
+      const link = document.createElement("link");
+      link.rel = "stylesheet";
+      link.href = JOBBER_CSS;
+      link.media = "screen";
+      document.head.appendChild(link);
+    }
+
+    document.querySelectorAll(`script[src="${JOBBER_SCRIPT}"]`).forEach((el) => el.remove());
+
+    const script = document.createElement("script");
+    script.src = JOBBER_SCRIPT;
+    script.async = true;
+    script.setAttribute("clienthub_id", JOBBER_CLIENTHUB_ID);
+    script.setAttribute("form_url", JOBBER_FORM_URL);
+
+    // Jobber's snippet reads document.currentScript; polyfill for dynamic insert.
+    const descriptor = Object.getOwnPropertyDescriptor(Document.prototype, "currentScript");
+    Object.defineProperty(document, "currentScript", {
+      configurable: true,
+      get: () => script,
+    });
+
+    const restore = () => {
+      if (descriptor) Object.defineProperty(Document.prototype, "currentScript", descriptor);
+      else Reflect.deleteProperty(document, "currentScript");
+    };
+
+    script.addEventListener("load", restore);
+    script.addEventListener("error", restore);
+    document.body.appendChild(script);
+
+    return () => {
+      restore();
+    };
+  }, []);
+
+  return <div id={JOBBER_CLIENTHUB_ID} className="w-full" />;
+}
 
 /* ── Logo ───────────────────────────────────────────────────────────── */
 function Logo({ size = "md", invert = true }: { size?: "sm" | "md" | "lg"; invert?: boolean }) {
@@ -121,68 +173,9 @@ const FAQS = [
 
 const SCHEMA = { "@context": "https://schema.org", "@graph": [{ "@type": "LocalBusiness", "name": "DeMelo Plumbing & Electrical", "telephone": "+12263872017", "url": "https://www.demeloplumbingelectrical.ca", "openingHours": "Mo-Su 00:00-24:00", "aggregateRating": { "@type": "AggregateRating", "ratingValue": "5.0", "reviewCount": "20" }, "address": { "@type": "PostalAddress", "streetAddress": "272 German School Rd", "addressLocality": "Brant", "addressRegion": "ON", "postalCode": "N3L 3E1", "addressCountry": "CA" } }, { "@type": "FAQPage", "mainEntity": FAQS.map(f => ({ "@type": "Question", "name": f.q, "acceptedAnswer": { "@type": "Answer", "text": f.a } })) }] };
 
-const LEAD_WEBHOOK_URL =
-  "https://services.leadconnectorhq.com/hooks/TPrxtx0jzGjXWbjVv2pj/webhook-trigger/21b34e5c-9eb8-4841-87d1-bd1c1ffa4071";
-
 export default function App() {
   const [tab, setTab]   = useState<"plumbing" | "electrical">("plumbing");
   const [faq, setFaq]   = useState<number | null>(null);
-  const [form, setForm] = useState({ name: "", phone: "", service: "" });
-  const [sent, setSent] = useState(false);
-  const [submitting, setSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState("");
-
-  async function handleLeadSubmit(e: FormEvent) {
-    e.preventDefault();
-    if (submitting) return;
-    setSubmitting(true);
-    setSubmitError("");
-
-    const name = form.name.trim();
-    const phone = form.phone.trim();
-    const service = form.service.trim();
-    const parts = name.split(/\s+/);
-    const firstName = parts[0] || name;
-    const lastName = parts.slice(1).join(" ") || "";
-
-    try {
-      // Prefer same-origin API on Vercel; fall back to webhook for local Vite.
-      const endpoints = ["/api/lead", LEAD_WEBHOOK_URL];
-      let ok = false;
-      let lastError = "";
-
-      for (const endpoint of endpoints) {
-        try {
-          const res = await fetch(endpoint, {
-            method: "POST",
-            headers: { "Content-Type": "application/json", Accept: "application/json" },
-            body: JSON.stringify({
-              name,
-              firstName,
-              lastName,
-              phone,
-              service,
-              source: "DeMelo Landing Page - Free Estimate",
-            }),
-          });
-          if (res.ok) {
-            ok = true;
-            break;
-          }
-          lastError = `HTTP ${res.status}`;
-        } catch (err) {
-          lastError = err instanceof Error ? err.message : "Network error";
-        }
-      }
-
-      if (!ok) throw new Error(lastError || "Submit failed");
-      setSent(true);
-    } catch {
-      setSubmitError("Something went wrong. Please call (226) 387-2017.");
-    } finally {
-      setSubmitting(false);
-    }
-  }
 
   return (
     <>
@@ -281,82 +274,13 @@ export default function App() {
             </div>
           </div>
 
-          {/* Form — full-bleed on mobile, floating over photo on desktop */}
-          <div className="relative z-10 flex items-center justify-center px-0 py-0 lg:absolute lg:inset-y-0 lg:right-0 lg:w-[42%] lg:px-6 lg:py-0 lg:pr-[max(2rem,calc((100vw-1152px)/2+2rem))] lg:pl-6">
+          {/* Form — full-bleed on mobile; scrollable within hero height on desktop */}
+          <div className="relative z-10 flex items-start justify-center px-0 py-0 lg:absolute lg:inset-y-0 lg:right-0 lg:w-[44%] lg:overflow-y-auto lg:overscroll-contain lg:px-6 lg:pt-24 lg:pb-6 lg:pr-[max(2rem,calc((100vw-1152px)/2+2rem))] lg:pl-6">
             <div
-              className="w-full max-w-full lg:max-w-sm rounded-none lg:rounded-2xl p-6 lg:border-2 lg:shadow-[0_32px_64px_rgba(8,12,23,0.45)]"
+              className="w-full max-w-full lg:max-w-md rounded-none lg:rounded-2xl p-3 sm:p-4 lg:border-2 lg:shadow-[0_32px_64px_rgba(8,12,23,0.45)] lg:my-auto"
               style={{ background: "rgba(255,255,255,0.97)", borderColor: "#F5A623" }}
             >
-              <div className="flex items-start justify-between gap-3 mb-1">
-                <p className="font-display font-black text-[1.35rem] leading-tight" style={{ color: "#080C17" }}>Get a Free Estimate</p>
-                <span className="flex-shrink-0 text-[10px] font-black uppercase tracking-widest px-2.5 py-1 rounded-md mt-0.5"
-                  style={{ background: "rgba(245,166,35,0.14)", color: "#C47E0A" }}>No Obligation</span>
-              </div>
-              <p className="text-sm mb-6" style={{ color: "rgba(8,12,23,0.45)" }}>A real person calls back within 15 minutes.</p>
-
-              {sent ? (
-                <div className="text-center py-6">
-                  <div className="w-12 h-12 rounded-full flex items-center justify-center mx-auto mb-3" style={{ background: "rgba(24,200,224,0.10)" }}>
-                    <CheckCircle className="w-6 h-6" style={{ color: "#18C8E0" }} />
-                  </div>
-                  <p className="font-display font-black text-lg" style={{ color: "#080C17" }}>Request Received!</p>
-                  <p className="text-sm mt-1 mb-4" style={{ color: "rgba(8,12,23,0.45)" }}>We'll call you within 15 minutes.</p>
-                  <a href="tel:+12263872017" className="inline-flex items-center gap-2 font-black px-5 py-3 rounded-2xl"
-                    style={{ background: "#F5A623", color: "#080C17" }}>
-                    <Phone className="w-4 h-4" /> Call Now
-                  </a>
-                </div>
-              ) : (
-                <form onSubmit={handleLeadSubmit} className="space-y-4">
-                  {[
-                    { id: "hfn", label: "Your Name",    type: "text", ph: "John Smith",      key: "name",  auto: "name" },
-                    { id: "hfp", label: "Phone Number", type: "tel",  ph: "(226) 555-0100", key: "phone", auto: "tel" },
-                  ].map(f => (
-                    <div key={f.id}>
-                      <label htmlFor={f.id} className="block text-[10px] font-bold uppercase tracking-widest mb-2"
-                        style={{ color: "rgba(8,12,23,0.42)" }}>{f.label} *</label>
-                      <input id={f.id} type={f.type} required placeholder={f.ph}
-                        value={form[f.key as keyof typeof form]}
-                        onChange={e => setForm({ ...form, [f.key]: e.target.value })}
-                        autoComplete={f.auto}
-                        disabled={submitting}
-                        className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 placeholder:text-[rgba(8,12,23,0.35)] disabled:opacity-60"
-                        style={{ background: "#FFFFFF", border: "1.5px solid rgba(8,12,23,0.12)", color: "#080C17" }}
-                      />
-                    </div>
-                  ))}
-                  <div>
-                    <label htmlFor="hfs" className="block text-[10px] font-bold uppercase tracking-widest mb-2"
-                      style={{ color: "rgba(8,12,23,0.42)" }}>Service Needed</label>
-                    <select id="hfs" value={form.service} onChange={e => setForm({ ...form, service: e.target.value })}
-                      disabled={submitting}
-                      className="w-full rounded-2xl px-4 py-3.5 text-sm focus:outline-none focus:ring-2 focus:ring-[#F5A623]/35 appearance-none disabled:opacity-60"
-                      style={{
-                        backgroundColor: "#FFFFFF",
-                        border: "1.5px solid rgba(8,12,23,0.12)",
-                        color: form.service ? "#080C17" : "rgba(8,12,23,0.35)",
-                        backgroundImage: `url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='16' height='16' viewBox='0 0 24 24' fill='none' stroke='%23999999' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpolyline points='6 9 12 15 18 9'%3E%3C/polyline%3E%3C/svg%3E")`,
-                        backgroundRepeat: "no-repeat",
-                        backgroundPosition: "right 1rem center",
-                        paddingRight: "2.75rem",
-                      }}>
-                      <option value="">Select a service...</option>
-                      {["Emergency Plumbing Repair","Drain Cleaning","Water Heater Replacement","Electrical Panel Upgrade","Sump Pump Repair","Kitchen / Bathroom Renovation","Other"].map(o => (
-                        <option key={o}>{o}</option>
-                      ))}
-                    </select>
-                  </div>
-                  {submitError && (
-                    <p className="text-center text-xs font-semibold" style={{ color: "#E63946" }}>{submitError}</p>
-                  )}
-                  <button type="submit" disabled={submitting}
-                    className="w-full font-black text-sm tracking-wide py-4 rounded-2xl flex items-center justify-center gap-2 hover:opacity-90 transition-opacity mt-1 disabled:opacity-70"
-                    style={{ background: "#F5A623", color: "#080C17", boxShadow: "0 8px 20px rgba(245,166,35,0.35)" }}>
-                    {submitting ? "SENDING…" : <>GET FREE ESTIMATE <ArrowRight className="w-4 h-4" /></>}
-                  </button>
-                  <p className="text-center text-xs pt-0.5" style={{ color: "rgba(8,12,23,0.32)" }}>No spam. No obligation. Ever.</p>
-                </form>
-              )}
+              <JobberWorkRequestForm />
             </div>
           </div>
         </section>
